@@ -24,14 +24,15 @@ app.configure('development', function(){
 });
 
 app.configure('production', function(){
-  app.use(express.errorHandler()); 
+  app.use(express.errorHandler());
+
 });
 
 // Routes
 
 app.get('/', routes.index);
-
-app.listen(1337);
+var port = process.env.PORT || 5000;
+app.listen(port);
 
 console.log("Express server listening on port %d in %s mode", app.address().port, app.settings.env);
 
@@ -81,6 +82,14 @@ function init(err, data){
     words = {};
     players = 0;
     io = require('socket.io').listen(app);
+
+    //Production configs
+    io.configure(function(){
+    
+        io.set('transports',["xhr-polling"]);
+        io.set("polling duration", 10);
+    
+    });
     if(err){
         console.log("Error reading dictionary: "+err);
     } 
@@ -128,7 +137,8 @@ onNewPlayer = function(data) {
     if(players == 1){
         this.emit("new player", {player_id: this.id, game_word: game_word, waiting: true});
     } else {
-        io.sockets.emit("new player", {player_id: this.id, game_word: game_word, waiting: false}); 
+        this.emit("new player", {player_id: this.id, game_word: game_word, waiting: false}); 
+        io.sockets.emit("two players", { waiting:false});
     }
 };
 

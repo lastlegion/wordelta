@@ -4,9 +4,7 @@
   "private": true,
   "dependencies": {
     "express": "2.5.1",
-    "jade": ">= 0.0.1",
-    "socket.io": "0.9.16"
-
+    "jade": ">= 0.0.1"
   },
   "gitHead": "b001358113bbf2108aef4d7527abe2ee13b11bd6",
   "description": "A twoplayer word game",

@@ -32,7 +32,13 @@ script(type='text/javascript')
         socket.on("new player", onNewPlayer);
         //socket.on("add word", onAddWord);
         socket.on("word added", onWordAdded);
+        socket.on("two players", onTwoPlayers);
     }; 
+    function onTwoPlayers(data){
+        if(data.waiting == false){
+           waitOver(); 
+        }  
+    };
     function onWordAdded(data){
         var player = data.player_id;
         var points = data.score;
@@ -72,12 +78,10 @@ script(type='text/javascript')
         game_word = game_data.game_word;
         this_player = game_data.player_id;
         waiting  = game_data.waiting;
-
+        
         if(waiting){
             waitGame();    
-        } else {
-            waitOver();    
-        }
+        } 
         current_game_word = game_word;
         console.log(game_data.player_id) ;
         console.log(game_data.game_word);
@@ -238,7 +242,7 @@ script(type='text/javascript')
     //Initialization
     function init(){
         //Initialize socket connection
-        socket = io.connect("http://localhost:1337");
+        socket = io.connect("http://localhost:5000");
         current_word = "";
         $("#player_ip").focus();
         //Start listening for events
