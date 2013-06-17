@@ -242,7 +242,8 @@ script(type='text/javascript')
     //Initialization
     function init(){
         //Initialize socket connection
-        socket = io.connect("http://localhost:5000");
+        //socket = io.connect("http://localhost:5000");
+        socket = io.connect(window.location.hostname);
         current_word = "";
         $("#player_ip").focus();
         //Start listening for events
