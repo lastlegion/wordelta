@@ -2,8 +2,10 @@ div#header
     h1 Wordelta
 #container
     h1 Welcome
+    if reset
+        #msg Game resetted!
     a#button(href="game", class="green_button") New Game
-
+    a#button(href="reset", class="red_button") Reset
 script(src='javascripts/jquery.js')
 script(src='/socket.io/socket.io.js')
 script(type='text/javascript')
