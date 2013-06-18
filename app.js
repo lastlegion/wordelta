@@ -31,6 +31,7 @@ app.configure('production', function(){
 // Routes
 
 app.get('/', routes.index);
+app.get('/game', routes.game);
 var port = process.env.PORT || 5000;
 app.listen(port);
 

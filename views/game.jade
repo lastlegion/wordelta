@@ -1,0 +1,358 @@
+div#header
+    h1 Wordelta
+#waitingmsg WAITING for other player
+div#game_area
+    h1#game_word
+    #errors
+    #player1
+        #player1_area
+            h4 You
+            #p1_score
+                '0 points'
+        //input(type="text", name="player1_ip")
+    #player2
+        #player2_area
+            h4 Them
+            #p2_score
+                '0 points'
+
+    input(type="text", name="player_ip", id="player_ip")
+
+script(src='javascripts/jquery.js')
+script(src='/socket.io/socket.io.js')
+script(type='text/javascript')
+    
+    var socket, game_word, this_player, current_word, current_game_word, waiting;
+    /*
+     * Event 
+     */
+    var setEventHandlers = function(){
+       // socket.on("too many", onTooMany);
+        socket.on("connect", onSocketConnection);      
+        socket.on("new player", onNewPlayer);
+        //socket.on("add word", onAddWord);
+        socket.on("word added", onWordAdded);
+        socket.on("two players", onTwoPlayers);
+    }; 
+    function onTwoPlayers(data){
+        if(data.waiting == false){
+           waitOver(); 
+        }  
+    };
+    function onWordAdded(data){
+        var player = data.player_id;
+        var points = data.score;
+        var word = data.word;
+        if(data.added == true){ 
+             if(player == this_player){ 
+                console.log("here "+word);
+                current_word = "";
+                current_game_word = game_word;
+                drawP1Word(word);    
+                paintGameWord();
+                paintInputWord();
+                updateCurrentGameWord();
+
+            } else {
+                drawP2Word(word);
+            }
+            updateScores(points, player);
+
+        } else {
+            if(data.reason == "used" && data.player_id == this_player){
+                dispError("Word already used");    
+            } else {
+                if(data.player_id == this_player)
+                    dispError("Word not found in dictionary");    
+            }
+            console.log("Invalid word") ;   
+        }
+
+        
+    };
+    function onSocketConnection(game_data){
+        socket.emit("new player", {yo: "yo"});
+        console.log("Socket emitted");
+    };    
+    function onNewPlayer(game_data){
+        game_word = game_data.game_word;
+        this_player = game_data.player_id;
+        waiting  = game_data.waiting;
+        
+        if(waiting){
+            waitGame();    
+        } 
+        current_game_word = game_word;
+        console.log(game_data.player_id) ;
+        console.log(game_data.game_word);
+        paintGameWord();   
+    }; 
+
+    /*
+     * Game functions
+     */
+    function paintGameWord(){
+        //Clear game word
+        $("#game_word").html("");            
+        console.log("Painting word"); 
+        for(i=0; i<game_word.length; i++){
+            //paint red
+            if(current_word.indexOf(game_word[i]) != -1)
+                $("#game_word").append("<span style='color:red'>"+game_word[i]+"</span>")
+            else
+                $("#game_word").append(game_word[i])           
+        } 
+    }
+    function paintInputWord(){
+        $("#player_ip").focus();
+        $("#player_ip").val(current_word);
+    }
+    function drawP1Word(word){
+        var new_div = $("<div>").hide();
+        new_div.append(word);
+
+        $("#player1_area").append(new_div);
+        //$("#player1_area").append("<br />");
+        new_div.fadeIn();
+        //new_div.show();
+    }
+    function drawP2Word(word){
+        $("#player2_area").append(word);
+        $("#player2_area").append("<br />");
+    }
+    function waitGame(){
+        $("#waitingmsg").show(); 
+        $("#game_area").addClass("waiting");
+    }
+    function waitOver(){
+        $("#waitingmsg").hide();
+        $("#game_area").removeClass("waiting") ;   
+    }
+    function updateScores(score, player){
+        console.log("Update score");
+        if(player == this_player){
+            $("#p1_score").html(score+ " points");   
+            $("#p1_score").css("color", "#008800");
+            $("#p1_score").animate({opacity: 1}, 100);
+            $("#p1_score").animate({opacity: 1}, 300, function(){
+              $("#p1_score").css("color", "black");  
+            });
+            //
+        } else {
+            $("#p2_score").html(score +  " points"); 
+            $("#p2_score").css("color", "#660000");
+            $("#p2_score").animate({opacity: 1}, 100);
+            $("#p2_score").animate({opacity: 1}, 300, function(){
+              $("#p2_score").css("color", "black");  
+            });
+            //update player 2's  score    
+        }
+        
+    }
+    function clearError(e){
+        $("#errors").html("");
+    }
+    function dispError(e){
+        $("#errors").html(e);
+        $("#errors").animate({
+                opacity: 1
+            }, {duration: 200}) ;
+        $("#errors").animate({opacity:0}, {duration: 2500});
+    }
+
+    /*
+     * Helper functions
+     */
+    function isAlpha(c){
+        if((c>="a" && c<="z")||(c >= "A" && c<="Z")){
+            return true;    
+        }
+        return false;    
+    }
+    function isInGameWord(c){
+        if(current_game_word.indexOf(c) == -1){
+            return false;
+        } else{
+            return true;
+        }
+    }
+    function updateCurrentGameWord(){
+        current_game_word = game_word;
+        for(j=0; j<current_word.length; j++){
+            current_game_word = current_game_word.replace(current_word[j], "");
+        }    
+    }
+
+
+    /*
+     * Key Handlers
+     */
+    function keyHandlerAlpha(c){
+        //clearError();
+        if(isInGameWord(c)){
+            current_word = current_word + c;
+            console.log(current_word);
+            //console.log("here");
+        }else{
+            dispError("Invalid character. Not in '"+ game_word+"'");
+        }
+
+        updateCurrentGameWord();
+        paintInputWord();
+        paintGameWord();
+    }
+    function keyHandlerEnter(){
+        socket.emit("add word", {word:current_word, player:this_player});
+        //socket.on("add word", onAddWord);
+
+    }
+    function keyHandleRem(){
+        current_word=  $("#player_ip").val();
+        if(typeof current_word === 'undefined'){
+            current_word = "";    
+        }
+        //clearError();
+        updateCurrentGameWord();
+        paintInputWord();
+        paintGameWord();
+    }
+
+    function keyHandler(key){
+        
+        char_key = String.fromCharCode(key.keyCode);
+        console.log(char_key + " "+ current_word + " "+ current_game_word);
+        if(isAlpha(char_key)){      //a-z or A-Z
+            keyHandlerAlpha(char_key);    
+        } else if(key.keyCode == 13){   //enter
+            keyHandlerEnter();
+        } else {    //if backspace or delete
+            keyHandleRem();
+        }
+
+    } 
+    function initializeKeyListeners(){
+        
+        $("#player_ip").keyup(keyHandler);   
+    }    
+    function initializeGame(){
+
+        initializeKeyListeners();
+    };
+    
+    //Initialization
+    function init(){
+        //Initialize socket connection
+        //socket = io.connect("http://localhost:5000");
+        socket = io.connect(window.location.hostname);
+        current_word = "";
+        $("#player_ip").focus();
+        //Start listening for events
+        setEventHandlers(); 
+
+        //Initialize game area
+        initializeGame();
+
+    }
+
+    init();
+ 
+
+    /* 
+
+    var game_word = "Dinosaur".toUpperCase();
+    var current_game_word = game_word;
+    var current_word = "";
+    var player_id=0;
+    
+    socket.emit("adduser", player_id);
+    socket.on("assignId", function(id){
+        player_id = id.player_id; 
+        console.log(player_id);
+        console.log("this");
+    });
+    
+    socket.on("points", function(points){
+        $("#points").html(points.points);
+        console.log("happened");
+    });
+    $("#game_word").html(game_word);
+    function updateGameWord(){
+        current_game_word = game_word;
+        for(j=0; j<current_word.length; j++){
+            current_game_word = current_game_word.replace(current_word[j], "");    
+        }    
+    }
+    function paintWord(){
+        $("#game_word").html("");
+        for(i=0; i<game_word.length; i++){
+            if(current_word.indexOf(game_word[i]) != -1)
+                $("#game_word").append("<span style='color:red'>"+game_word[i]+"</span>")
+            else
+                $("#game_word").append(game_word[i])           
+        }
+    } 
+    $("#player_ip").keyup(function(e){
+        char_pressed = String.fromCharCode(e.keyCode);
+        var flag = false;
+        if(e.shiftKey || (char_pressed >= "A" && char_pressed<="Z") ||(char_pressed>="a" && char_pressed<="z")){
+            if(current_game_word.indexOf(char_pressed) != -1) {
+                $("#game_word").html("");
+                
+                for(i=0; i<game_word.length; i++){
+                    if(i == game_word.indexOf(char_pressed) ){
+                        current_word = current_word + char_pressed;
+                        //current_word = this.value;
+                        //current_game_word = current_game_word.replace(char_pressed, "");
+                    }
+
+                 }
+                updateGameWord();
+                paintWord();
+
+            }else{
+                e.preventDefault();
+                this.value="";
+                this.value=current_word;
+                console.log("Error") ;   
+            }
+                
+        } else if( e.keyCode == 13){    //enter
+
+            //socket.on
+            if($.trim($("#player_ip").val()) != ""){    
+                socket.emit("check_word", {word: current_word, player: player_id});
+                socket.on("word_found", function(found){
+                    console.log(found.player);
+                    if(found.found == "true"){
+                        if(found.player == player_id){
+                            
+                            $("#player1_area").append(current_word+" ");
+                            $("#player_ip").val("");
+                            current_word = "";
+                            current_game_word = game_word;
+                            paintWord();
+                            updateGameWord(); 
+                            console.log("Valid word");    
+                        } else{
+                            $("#player2_area").append(found.word+" ");    
+                        }
+                        
+                    } else if (found.found=="duplicate"){
+                        console.log("Duplicate"); 
+                    }else {
+                        console.log("Word not found");    
+                    }
+                });
+            }else{
+                console.log("khaali");    
+            }
+        } else {
+            current_word = this.value;    
+            paintWord();
+            updateGameWord();
+        }
+       //$("#game_word").html
+        console.log(current_game_word + " "+ current_word+" "+String.fromCharCode(e.keyCode));
+    });
+    */
+
