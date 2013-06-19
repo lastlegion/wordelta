@@ -120,8 +120,8 @@ a#button:hover{
     font-weight: normal;
     background: #333;
     color: #fff;
-    padding: 8px 20px;
-    margin: 0;
+    padding: 8px 120px 8px 470px;
+    margin: 0 auto;
 }
 
 #game_area{
@@ -130,7 +130,8 @@ a#button:hover{
     margin: 0 auto;
     text-align: center;
     height: 600px;
-    border: 1px solid #333;
+    border-right:1px  solid #333;
+    border-left: 1px solid #333;s
 
 }
 input{
