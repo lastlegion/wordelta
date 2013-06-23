@@ -2,11 +2,18 @@ var fs = require('fs');
 /*
  * Game Variables
  */
+var big_words = [
+    "idiosyncratic",
+    "dinosaur",
+    "penultimate",
+    "magnanimous",
+    "luminescent"
+];
 var scores, words;
 var word_list;
 var games = [];
 var players;
-var game_word = "Dinosaur".toUpperCase();
+var game_word;
 
 var app;
 /*
@@ -52,22 +59,23 @@ function reset(){
     scores = {};
     words = {};
     players = 0;
-
+    //reset game word
+    game_word = big_words[Math.floor(Math.random()*big_words.length)].toUpperCase();
 }
 
 function init(err, data){
     console.log("init called");
     //players = [];
     reset();
+    
     io = require('socket.io').listen(app);
 
     //Production configs
-    io.configure(function(){
-    
+    io.configure(function(){ 
         io.set('transports',["xhr-polling"]);
         io.set("polling duration", 10);
-    
     });
+
     if(err){
         console.log("Error reading dictionary: "+err);
     } 
